@@ -52,7 +52,7 @@ public class FileSystemStorageService implements StorageService {
             }
         }
         catch (IOException e) {
-            throw new StorageException("Failed to store file.", e);
+            throw new StorageException(e.getMessage());
         }
     }
 

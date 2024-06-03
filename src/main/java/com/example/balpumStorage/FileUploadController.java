@@ -51,41 +51,50 @@ public class FileUploadController {
 
         Resource file = storageService.loadAsResource(filename);
 
-        if (file == null) {
+        if (file == null)
             return ResponseEntity.notFound().build();
-        }
 
-        String mimeType = "application/octet-stream";  // 기본 MIME 타입 설정
-        try {
-            mimeType = Files.probeContentType(file.getFile().toPath());
-        } catch (IOException e) {
-            // MIME 타입을 결정할 수 없는 경우 기본값 사용
-        }
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(mimeType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
-                .body(file);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
     }
-//    스프링부트에서 기본적으로 제공된 코드
+
 //    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
 //
 //        Resource file = storageService.loadAsResource(filename);
 //
-//        if (file == null)
+//        if (file == null) {
 //            return ResponseEntity.notFound().build();
+//        }
 //
-//        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-//                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+//        String mimeType = "application/octet-stream";  // 기본 MIME 타입 설정
+//        try {
+//            mimeType = Files.probeContentType(file.getFile().toPath());
+//        } catch (IOException e) {
+//            // MIME 타입을 결정할 수 없는 경우 기본값 사용
+//        }
+//
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.parseMediaType(mimeType))
+//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+//                .body(file);
 //    }
 
     @PostMapping("/")
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("message", "Please select a file to upload.");
+            return "redirect:/";
+        }
 
-        storageService.store(file);
-        redirectAttributes.addFlashAttribute("message",
-                "You successfully uploaded " + file.getOriginalFilename() + "!");
+        try {
+            storageService.store(file);
+            redirectAttributes.addFlashAttribute("message",
+                    "You successfully uploaded " + file.getOriginalFilename() + "!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
+        }
 
         return "redirect:/";
     }
@@ -94,5 +103,4 @@ public class FileUploadController {
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
     }
-
 }
