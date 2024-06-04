@@ -1,5 +1,6 @@
 package com.example.balpumStorage.storage;
 
+import com.example.balpumStorage.file.entity.FileEntity;
 import com.example.balpumStorage.file.resource.FileResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,4 +22,9 @@ public interface StorageService {
 
     void deleteAll();
 
+    FileEntity getFileDetails(String filename);
+
+    FileEntity updateFileDetails(String filename, String newOriginalFilename);
+
+    void deleteFile(String filename);
 }

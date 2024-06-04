@@ -127,4 +127,35 @@ public class FileSystemStorageService implements StorageService {
             throw new StorageException("Could not initialize storage", e);
         }
     }
+
+    public FileEntity getFileDetails(String filename) {
+        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
+        if (fileEntity == null) {
+            throw new StorageFileNotFoundException("File not found: " + filename);
+        }
+        return fileEntity;
+    }
+
+    public FileEntity updateFileDetails(String filename, String newOriginalFilename) {
+        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
+        if (fileEntity == null) {
+            throw new StorageFileNotFoundException("File not found: " + filename);
+        }
+        fileEntity.setOriginalFilename(newOriginalFilename);
+        return fileRepository.save(fileEntity);
+    }
+
+    public void deleteFile(String filename) {
+        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
+        if (fileEntity == null) {
+            throw new StorageFileNotFoundException("File not found: " + filename);
+        }
+        Path filePath = Paths.get(fileEntity.getFilepath());
+        try {
+            Files.deleteIfExists(filePath);
+            fileRepository.delete(fileEntity);
+        } catch (IOException e) {
+            throw new StorageException("Failed to delete file: " + filename, e);
+        }
+    }
 }
