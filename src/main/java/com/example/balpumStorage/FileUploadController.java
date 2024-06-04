@@ -41,6 +41,10 @@ public class FileUploadController {
                         path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
                                 "serveFile", path.getFileName().toString()).build().toUri().toString())
                 .collect(Collectors.toList()));
+        // 파일 절대 경로로 매핑하는 코드
+//        model.addAttribute("files", storageService.loadAll()
+//                .map(Path::toString)
+//                .collect(Collectors.toList()));
 
         return "uploadForm";
     }
@@ -57,27 +61,6 @@ public class FileUploadController {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
     }
-
-//    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-//
-//        Resource file = storageService.loadAsResource(filename);
-//
-//        if (file == null) {
-//            return ResponseEntity.notFound().build();
-//        }
-//
-//        String mimeType = "application/octet-stream";  // 기본 MIME 타입 설정
-//        try {
-//            mimeType = Files.probeContentType(file.getFile().toPath());
-//        } catch (IOException e) {
-//            // MIME 타입을 결정할 수 없는 경우 기본값 사용
-//        }
-//
-//        return ResponseEntity.ok()
-//                .contentType(MediaType.parseMediaType(mimeType))
-//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
-//                .body(file);
-//    }
 
     @PostMapping("/")
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
