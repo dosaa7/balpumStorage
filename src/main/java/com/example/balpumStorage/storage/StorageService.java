@@ -1,5 +1,6 @@
 package com.example.balpumStorage.storage;
 
+import com.example.balpumStorage.file.resource.FileResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,7 +17,7 @@ public interface StorageService {
 
     Path load(String filename);
 
-    Resource loadAsResource(String filename);
+    FileResource loadAsResource(String filename);
 
     void deleteAll();
 

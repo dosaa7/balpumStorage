@@ -7,10 +7,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import com.example.balpumStorage.file.entity.FileEntity;
 import com.example.balpumStorage.file.repository.FileRepository;
+import com.example.balpumStorage.file.resource.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -27,7 +29,7 @@ public class FileSystemStorageService implements StorageService {
 
     @Autowired
     public FileSystemStorageService(StorageProperties properties, FileRepository fileRepository) {
-        if(properties.getLocation().trim().length() == 0){
+        if (properties.getLocation().trim().length() == 0) {
             throw new StorageException("File upload location can not be Empty.");
         }
         this.rootLocation = Paths.get(properties.getLocation());
@@ -40,25 +42,32 @@ public class FileSystemStorageService implements StorageService {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file.");
             }
-            Path destinationFile = this.rootLocation.resolve(
-                            Paths.get(file.getOriginalFilename()))
+            // UUID를 사용하여 저장할 파일명 생성
+            String originalFilename = file.getOriginalFilename();
+            String storedFilename = UUID.randomUUID().toString() + "-" + originalFilename;
+            // 디렉토리 생성 (UUID 앞 두자리 기준)
+            Path directory = this.rootLocation.resolve(Paths.get(storedFilename.substring(0, 2)))
                     .normalize().toAbsolutePath();
-            if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+            if (!Files.exists(directory)) {
+                Files.createDirectories(directory);
+            }
+
+            Path destinationFile = directory.resolve(Paths.get(storedFilename)).normalize().toAbsolutePath();
+            if (!destinationFile.getParent().startsWith(this.rootLocation.toAbsolutePath())) {
                 // This is a security check
-                throw new StorageException(
-                        "Cannot store file outside current directory.");
+                throw new StorageException("Cannot store file outside current directory.");
             }
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFile,
                         StandardCopyOption.REPLACE_EXISTING);
                 // 파일 정보를 데이터베이스에 저장
                 FileEntity fileEntity = new FileEntity();
-                fileEntity.setFilename(file.getOriginalFilename());
+                fileEntity.setOriginalFilename(originalFilename);
+                fileEntity.setStoredFilename(storedFilename);
                 fileEntity.setFilepath(destinationFile.toString());
                 fileRepository.save(fileEntity);
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new StorageException(e.getMessage());
         }
     }
@@ -72,16 +81,14 @@ public class FileSystemStorageService implements StorageService {
 //            return Files.walk(this.rootLocation, 1)
 //                    .filter(path -> !path.equals(this.rootLocation))
 //                    .map(this.rootLocation::relativize);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new StorageException("Failed to read stored files", e);
         }
-
     }
 
     @Override
     public Path load(String filename) {
-        FileEntity fileEntity = fileRepository.findByFilename(filename);
+        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
         if (fileEntity == null) {
             throw new StorageFileNotFoundException("File not found: " + filename);
         }
@@ -90,20 +97,18 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
-    public Resource loadAsResource(String filename) {
+    public FileResource loadAsResource(String filename) {
         try {
             Path file = load(filename);
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                return resource;
-            }
-            else {
+                FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
+                return new FileResource(resource, fileEntity.getOriginalFilename());
+            } else {
                 throw new StorageFileNotFoundException(
                         "Could not read file: " + filename);
-
             }
-        }
-        catch (MalformedURLException e) {
+        } catch (MalformedURLException e) {
             throw new StorageFileNotFoundException("Could not read file: " + filename, e);
         }
     }
@@ -118,8 +123,7 @@ public class FileSystemStorageService implements StorageService {
     public void init() {
         try {
             Files.createDirectories(rootLocation);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new StorageException("Could not initialize storage", e);
         }
     }

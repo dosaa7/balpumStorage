@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.stream.Collectors;
 
+import com.example.balpumStorage.file.resource.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -52,14 +53,13 @@ public class FileUploadController {
     @GetMapping("/files/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        FileResource fileResource = storageService.loadAsResource(filename);
 
-        Resource file = storageService.loadAsResource(filename);
-
-        if (file == null)
+        if (fileResource == null)
             return ResponseEntity.notFound().build();
 
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+                "attachment; filename=\"" + fileResource.getOriginalFilename() + "\"").body(fileResource.getResource());
     }
 
     @PostMapping("/")

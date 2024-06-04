@@ -13,6 +13,7 @@ public class FileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String filename;
+    private String originalFilename;
+    private String storedFilename;
     private String filepath;
 }
