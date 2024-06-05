@@ -7,6 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -50,6 +53,9 @@ public class FileSystemStorageService implements StorageService {
                     .normalize().toAbsolutePath();
             if (!Files.exists(directory)) {
                 Files.createDirectories(directory);
+                // 디렉토리 권한 설정
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+                Files.setPosixFilePermissions(directory, permissions);
             }
 
             Path destinationFile = directory.resolve(Paths.get(storedFilename)).normalize().toAbsolutePath();
