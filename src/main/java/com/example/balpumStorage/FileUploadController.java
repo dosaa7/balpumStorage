@@ -21,9 +21,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.balpumStorage.storage.StorageFileNotFoundException;
 import com.example.balpumStorage.storage.StorageService;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UrlPathHelper;
 
-@RequestMapping("/api")
-@Controller
+import javax.servlet.http.HttpServletRequest;
+
+@RequestMapping("/api/files")
+@RestController
 public class FileUploadController {
 
     private final StorageService storageService;
@@ -45,14 +49,25 @@ public class FileUploadController {
         return "uploadForm";
     }
 
-    @GetMapping("/files/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-        FileResource fileResource = storageService.loadAsResource(filename);
+    @GetMapping("/image-url")
+    public ResponseEntity<String> getImageUrl(@RequestParam String filepath) {
+        String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/files/images/")
+                .path(filepath)
+                .toUriString();
+
+        return ResponseEntity.ok(fileUrl);
+    }
+
+    @GetMapping("/images/**")
+    public ResponseEntity<Resource> serveFile(HttpServletRequest request) {
+        String filepath = new UrlPathHelper().getPathWithinApplication(request);
+        filepath = filepath.substring("/api/files/images/".length());
+        FileResource fileResource = storageService.loadAsResource(filepath);
 
         if (fileResource == null) return ResponseEntity.notFound().build();
 
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getOriginalFilename() + "\"").body(fileResource.getResource());
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileResource.getFilepath() + "\"").body(fileResource.getResource());
     }
 
     @PostMapping("/")
@@ -66,6 +81,18 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.CREATED).body("You successfully uploaded " + file.getOriginalFilename() + " with reference path " + refPath + "!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/**")
+    public ResponseEntity<Void> deleteFile(HttpServletRequest request) {
+        try {
+            String filepath = new UrlPathHelper().getPathWithinApplication(request);
+            filepath = filepath.substring("/api/files/".length());
+            storageService.deleteFile(filepath);
+            return ResponseEntity.noContent().build();
+        } catch (StorageFileNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -91,17 +118,6 @@ public class FileUploadController {
         try {
             FileEntity updatedFileEntity = storageService.updateFileDetails(filename, newOriginalFilename);
             return ResponseEntity.ok(updatedFileEntity);
-        } catch (StorageFileNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/files/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<Void> deleteFile(@PathVariable String filename) {
-        try {
-            storageService.deleteFile(filename);
-            return ResponseEntity.noContent().build();
         } catch (StorageFileNotFoundException e) {
             return ResponseEntity.notFound().build();
         }

@@ -4,18 +4,18 @@ import org.springframework.core.io.Resource;
 
 public class FileResource {
     private final Resource resource;
-    private final String originalFilename;
+    private final String filepath;
 
-    public FileResource(Resource resource, String originalFilename) {
+    public FileResource(Resource resource, String storedFilename) {
         this.resource = resource;
-        this.originalFilename = originalFilename;
+        this.filepath = storedFilename;
     }
 
     public Resource getResource() {
         return resource;
     }
 
-    public String getOriginalFilename() {
-        return originalFilename;
+    public String getFilepath() {
+        return filepath;
     }
 }

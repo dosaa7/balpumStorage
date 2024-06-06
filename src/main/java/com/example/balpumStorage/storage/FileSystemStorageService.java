@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,40 +49,30 @@ public class FileSystemStorageService implements StorageService {
             }
             String originalFilename = file.getOriginalFilename();
 
-            Path path = Paths.get(refPath).normalize();
-            if (path.isAbsolute()) {
-                throw new StorageException("Absolute paths are not allowed.");
-            }
-
-            Path destinationFilePath = this.rootLocation.resolve(path).normalize().toAbsolutePath();
-
-            if (!destinationFilePath.startsWith(this.rootLocation.toAbsolutePath())) {
-                throw new StorageException("Cannot store file outside current directory.");
-            }
-
+            Path destinationFilePath = loadSafe(refPath);
             Path directory = destinationFilePath.getParent();
             if (directory != null && !Files.exists(directory)) {
                 Files.createDirectories(directory);
+                // 디렉토리 권한 설정: 로컬에서 테스트할 때는 주석처리
+//                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+//                Files.setPosixFilePermissions(directory, permissions);
             }
-
             // 파일 저장 전에 DB에서 동일한 파일이 있는지 확인
-            Optional<FileEntity> existingFile = fileRepository.findByFilepath(destinationFilePath.toString());
-            if (existingFile.isPresent()) {
-                // 기존 파일이 존재한다면 덮어쓰기
-                existingFile.get().setOriginalFilename(originalFilename);
-                fileRepository.save(existingFile.get());
+            FileEntity existingFile = fileRepository.findByFilepath(destinationFilePath.toString());
+            if (existingFile != null) {
+                // 기존 파일이 존재한다면 DB 업데이트
+                existingFile.setOriginalFilename(originalFilename);
+                fileRepository.save(existingFile);
             } else {
-                try (InputStream inputStream = file.getInputStream()) {
-                    Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
-                }
-
                 FileEntity fileEntity = new FileEntity();
                 fileEntity.setOriginalFilename(originalFilename);
                 fileEntity.setStoredFilename(destinationFilePath.getFileName().toString());
                 fileEntity.setFilepath(destinationFilePath.toString());
                 fileRepository.save(fileEntity);
             }
-
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             throw new StorageException(e.getMessage());
         }
@@ -102,29 +93,44 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
-    public Path load(String filename) {
-        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
-        if (fileEntity == null) {
-            throw new StorageFileNotFoundException("File not found: " + filename);
+    public Path load(String filepath) {
+        Path destinationFilePath = loadSafe(filepath);
+
+        if (!Files.exists(destinationFilePath)) {
+            throw new StorageFileNotFoundException("File not found: " + filepath);
         }
-        return Paths.get(fileEntity.getFilepath());
-        //return rootLocation.resolve(filename);
+        return destinationFilePath;
     }
 
     @Override
-    public FileResource loadAsResource(String filename) {
+    public FileResource loadAsResource(String filepath) {
         try {
-            Path file = load(filename);
+            Path file = load(filepath);
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
-                return new FileResource(resource, fileEntity.getOriginalFilename());
+                return new FileResource(resource, file.toString());
             } else {
                 throw new StorageFileNotFoundException(
-                        "Could not read file: " + filename);
+                        "Could not read file: " + filepath);
             }
         } catch (MalformedURLException e) {
-            throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+            throw new StorageFileNotFoundException("Could not read file: " + filepath, e);
+        }
+    }
+
+    @Transactional
+    public void deleteFile(String filepath) {
+        Path destinationFilePath = loadSafe(filepath);
+
+        FileEntity fileEntity = fileRepository.findByFilepath(destinationFilePath.toString());
+        if (fileEntity == null) {
+            throw new StorageFileNotFoundException("File not found: " + filepath);
+        }
+        try {
+            Files.deleteIfExists(destinationFilePath);
+            fileRepository.delete(fileEntity);
+        } catch (IOException e) {
+            throw new StorageException("Failed to delete file: " + filepath, e);
         }
     }
 
@@ -151,17 +157,17 @@ public class FileSystemStorageService implements StorageService {
         return fileRepository.save(fileEntity);
     }
 
-    public void deleteFile(String filename) {
-        FileEntity fileEntity = fileRepository.findByStoredFilename(filename);
-        if (fileEntity == null) {
-            throw new StorageFileNotFoundException("File not found: " + filename);
+    public Path loadSafe(String filepath) throws StorageException {
+        Path path = Paths.get(filepath).normalize();
+        if (path.isAbsolute()) {
+            throw new StorageException("Absolute paths are not allowed.");
         }
-        Path filePath = Paths.get(fileEntity.getFilepath());
-        try {
-            Files.deleteIfExists(filePath);
-            fileRepository.delete(fileEntity);
-        } catch (IOException e) {
-            throw new StorageException("Failed to delete file: " + filename, e);
+
+        Path destinationFilePath = this.rootLocation.resolve(path).normalize().toAbsolutePath();
+        if (!destinationFilePath.startsWith(this.rootLocation.toAbsolutePath())) {
+            throw new StorageException("Cannot access files/folders outside the root directory.");
         }
+
+        return destinationFilePath;
     }
 }

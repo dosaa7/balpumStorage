@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface FileRepository extends JpaRepository<FileEntity, Long> {
     FileEntity findByStoredFilename(String filename);
-    Optional<FileEntity> findByFilepath(String filepath);
+    FileEntity findByFilepath(String filepath);
 }
