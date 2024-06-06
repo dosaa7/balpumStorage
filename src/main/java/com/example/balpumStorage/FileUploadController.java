@@ -36,10 +36,7 @@ public class FileUploadController {
     @GetMapping("/")
     public String listUploadedFiles(Model model) throws IOException {
 
-        model.addAttribute("files", storageService.loadAll().map(
-                        path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
-                                "serveFile", path.getFileName().toString()).build().toUri().toString())
-                .collect(Collectors.toList()));
+        model.addAttribute("files", storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList()));
         // 파일 절대 경로로 매핑하는 코드
 //        model.addAttribute("files", storageService.loadAll()
 //                .map(Path::toString)
@@ -53,41 +50,19 @@ public class FileUploadController {
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
         FileResource fileResource = storageService.loadAsResource(filename);
 
-        if (fileResource == null)
-            return ResponseEntity.notFound().build();
+        if (fileResource == null) return ResponseEntity.notFound().build();
 
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + fileResource.getOriginalFilename() + "\"").body(fileResource.getResource());
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getOriginalFilename() + "\"").body(fileResource.getResource());
     }
 
-//    @PostMapping("/")
-//    public String handleFileUpload(@RequestParam("file") MultipartFile file,
-//                                   RedirectAttributes redirectAttributes) {
-//        if (file.isEmpty()) {
-//            redirectAttributes.addFlashAttribute("message", "Please select a file to upload.");
-//            return "redirect:/";
-//        }
-//
-//        try {
-//            storageService.store(file);
-//            redirectAttributes.addFlashAttribute("message",
-//                    "You successfully uploaded " + file.getOriginalFilename() + "!");
-//        } catch (Exception e) {
-//            redirectAttributes.addFlashAttribute("message",
-//                    "Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
-//        }
-//
-//        return "redirect:/";
-//    }
     @PostMapping("/")
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
-                                                   @RequestParam("ref") String refPath) {
+    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam("ref") String refPath) {
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Please select a file to upload.");
         }
 
         try {
-            storageService.store(file);
+            storageService.store(file, refPath);
             return ResponseEntity.status(HttpStatus.CREATED).body("You successfully uploaded " + file.getOriginalFilename() + " with reference path " + refPath + "!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
@@ -120,6 +95,7 @@ public class FileUploadController {
             return ResponseEntity.notFound().build();
         }
     }
+
     @DeleteMapping("/files/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Void> deleteFile(@PathVariable String filename) {

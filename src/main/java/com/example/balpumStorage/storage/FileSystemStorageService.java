@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -40,39 +41,47 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
-    public void store(MultipartFile file) {
+    public void store(MultipartFile file, String refPath) {
         try {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file.");
             }
-            // UUID를 사용하여 저장할 파일명 생성
             String originalFilename = file.getOriginalFilename();
-            String storedFilename = UUID.randomUUID().toString() + "-" + originalFilename;
-            // 디렉토리 생성 (UUID 앞 두자리 기준)
-            Path directory = this.rootLocation.resolve(Paths.get(storedFilename.substring(0, 2)))
-                    .normalize().toAbsolutePath();
-            if (!Files.exists(directory)) {
-                Files.createDirectories(directory);
-                // 디렉토리 권한 설정: 로컬에서 테스트할 때는 주석처리
-//                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
-//                Files.setPosixFilePermissions(directory, permissions);
+
+            Path path = Paths.get(refPath).normalize();
+            if (path.isAbsolute()) {
+                throw new StorageException("Absolute paths are not allowed.");
             }
 
-            Path destinationFile = directory.resolve(Paths.get(storedFilename)).normalize().toAbsolutePath();
-            if (!destinationFile.getParent().startsWith(this.rootLocation.toAbsolutePath())) {
-                // This is a security check
+            Path destinationFilePath = this.rootLocation.resolve(path).normalize().toAbsolutePath();
+
+            if (!destinationFilePath.startsWith(this.rootLocation.toAbsolutePath())) {
                 throw new StorageException("Cannot store file outside current directory.");
             }
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile,
-                        StandardCopyOption.REPLACE_EXISTING);
-                // 파일 정보를 데이터베이스에 저장
+
+            Path directory = destinationFilePath.getParent();
+            if (directory != null && !Files.exists(directory)) {
+                Files.createDirectories(directory);
+            }
+
+            // 파일 저장 전에 DB에서 동일한 파일이 있는지 확인
+            Optional<FileEntity> existingFile = fileRepository.findByFilepath(destinationFilePath.toString());
+            if (existingFile.isPresent()) {
+                // 기존 파일이 존재한다면 덮어쓰기
+                existingFile.get().setOriginalFilename(originalFilename);
+                fileRepository.save(existingFile.get());
+            } else {
+                try (InputStream inputStream = file.getInputStream()) {
+                    Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
+                }
+
                 FileEntity fileEntity = new FileEntity();
                 fileEntity.setOriginalFilename(originalFilename);
-                fileEntity.setStoredFilename(storedFilename);
-                fileEntity.setFilepath(destinationFile.toString());
+                fileEntity.setStoredFilename(destinationFilePath.getFileName().toString());
+                fileEntity.setFilepath(destinationFilePath.toString());
                 fileRepository.save(fileEntity);
             }
+
         } catch (IOException e) {
             throw new StorageException(e.getMessage());
         }
