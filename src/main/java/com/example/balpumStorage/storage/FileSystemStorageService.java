@@ -53,9 +53,9 @@ public class FileSystemStorageService implements StorageService {
                     .normalize().toAbsolutePath();
             if (!Files.exists(directory)) {
                 Files.createDirectories(directory);
-                // 디렉토리 권한 설정
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
-                Files.setPosixFilePermissions(directory, permissions);
+                // 디렉토리 권한 설정: 로컬에서 테스트할 때는 주석처리
+//                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+//                Files.setPosixFilePermissions(directory, permissions);
             }
 
             Path destinationFile = directory.resolve(Paths.get(storedFilename)).normalize().toAbsolutePath();
@@ -123,15 +123,6 @@ public class FileSystemStorageService implements StorageService {
     public void deleteAll() {
         fileRepository.deleteAll();
         FileSystemUtils.deleteRecursively(rootLocation.toFile());
-    }
-
-    @Override
-    public void init() {
-        try {
-            Files.createDirectories(rootLocation);
-        } catch (IOException e) {
-            throw new StorageException("Could not initialize storage", e);
-        }
     }
 
     public FileEntity getFileDetails(String filename) {

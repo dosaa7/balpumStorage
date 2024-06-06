@@ -9,6 +9,7 @@ import com.example.balpumStorage.file.resource.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.balpumStorage.storage.StorageFileNotFoundException;
 import com.example.balpumStorage.storage.StorageService;
 
+@RequestMapping("/api")
 @Controller
 public class FileUploadController {
 
@@ -58,24 +60,38 @@ public class FileUploadController {
                 "attachment; filename=\"" + fileResource.getOriginalFilename() + "\"").body(fileResource.getResource());
     }
 
+//    @PostMapping("/")
+//    public String handleFileUpload(@RequestParam("file") MultipartFile file,
+//                                   RedirectAttributes redirectAttributes) {
+//        if (file.isEmpty()) {
+//            redirectAttributes.addFlashAttribute("message", "Please select a file to upload.");
+//            return "redirect:/";
+//        }
+//
+//        try {
+//            storageService.store(file);
+//            redirectAttributes.addFlashAttribute("message",
+//                    "You successfully uploaded " + file.getOriginalFilename() + "!");
+//        } catch (Exception e) {
+//            redirectAttributes.addFlashAttribute("message",
+//                    "Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
+//        }
+//
+//        return "redirect:/";
+//    }
     @PostMapping("/")
-    public String handleFileUpload(@RequestParam("file") MultipartFile file,
-                                   RedirectAttributes redirectAttributes) {
+    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
+                                                   @RequestParam("ref") String refPath) {
         if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("message", "Please select a file to upload.");
-            return "redirect:/";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Please select a file to upload.");
         }
 
         try {
             storageService.store(file);
-            redirectAttributes.addFlashAttribute("message",
-                    "You successfully uploaded " + file.getOriginalFilename() + "!");
+            return ResponseEntity.status(HttpStatus.CREATED).body("You successfully uploaded " + file.getOriginalFilename() + " with reference path " + refPath + "!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message",
-                    "Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
         }
-
-        return "redirect:/";
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)
