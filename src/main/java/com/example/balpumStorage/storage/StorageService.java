@@ -18,11 +18,7 @@ public interface StorageService {
 
     FileResource loadAsResource(String filename);
 
-    void deleteAll();
-
-    FileEntity getFileDetails(String filename);
-
-    FileEntity updateFileDetails(String filename, String newOriginalFilename);
-
     void deleteFile(String filename);
+
+//    void deleteAll();
 }

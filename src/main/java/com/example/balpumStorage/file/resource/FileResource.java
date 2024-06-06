@@ -6,9 +6,9 @@ public class FileResource {
     private final Resource resource;
     private final String filepath;
 
-    public FileResource(Resource resource, String storedFilename) {
+    public FileResource(Resource resource, String filepath) {
         this.resource = resource;
-        this.filepath = storedFilename;
+        this.filepath = filepath;
     }
 
     public Resource getResource() {

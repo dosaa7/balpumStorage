@@ -37,17 +37,17 @@ public class FileUploadController {
         this.storageService = storageService;
     }
 
-    @GetMapping("/")
-    public String listUploadedFiles(Model model) throws IOException {
-
-        model.addAttribute("files", storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList()));
-        // 파일 절대 경로로 매핑하는 코드
-//        model.addAttribute("files", storageService.loadAll()
-//                .map(Path::toString)
-//                .collect(Collectors.toList()));
-
-        return "uploadForm";
-    }
+//    @GetMapping("/")
+//    public String listUploadedFiles(Model model) throws IOException {
+//
+//        model.addAttribute("files", storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList()));
+//        // 파일 절대 경로로 매핑하는 코드
+////        model.addAttribute("files", storageService.loadAll()
+////                .map(Path::toString)
+////                .collect(Collectors.toList()));
+//
+//        return "uploadForm";
+//    }
 
     @GetMapping("/image-url")
     public ResponseEntity<String> getImageUrl(@RequestParam String filepath) {
@@ -99,27 +99,5 @@ public class FileUploadController {
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/fileDetails/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<FileEntity> getFileDetails(@PathVariable String filename) {
-        try {
-            FileEntity fileEntity = storageService.getFileDetails(filename);
-            return ResponseEntity.ok(fileEntity);
-        } catch (StorageFileNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PutMapping("/fileDetails/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<FileEntity> updateFileDetails(@PathVariable String filename, @RequestParam String newOriginalFilename) {
-        try {
-            FileEntity updatedFileEntity = storageService.updateFileDetails(filename, newOriginalFilename);
-            return ResponseEntity.ok(updatedFileEntity);
-        } catch (StorageFileNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 }

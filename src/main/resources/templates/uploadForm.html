@@ -1,91 +1,91 @@
-<!DOCTYPE html>
-<html xmlns:th="https://www.thymeleaf.org">
-<body>
-<div th:if="${message}">
-    <h2 th:text="${message}"></h2>
-</div>
-<div>
-    <form method="POST" enctype="multipart/form-data" action="/Balpum/">
-        <table>
-            <tr>
-                <td>File to upload:</td>
-                <td><input type="file" name="file" /></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td><input type="submit" value="Upload" /></td>
-            </tr>
-        </table>
-    </form>
-</div>
-<div>
-    <ul>
-        <li th:each="file : ${files}">
-            <a th:href="${file}" th:text="${file}"></a>
-        </li>
-    </ul>
-</div>
-<!-- 파일 상세 정보 조회 -->
-<form id="retrieveForm" method="GET">
-    <label for="retrieveFilename">File name to retrieve:</label>
-    <input type="text" id="retrieveFilename" name="filename" required>
-    <button type="button" onclick="retrieveFileDetails()">Retrieve</button>
-</form>
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="https://www.thymeleaf.org">-->
+<!--<body>-->
+<!--<div th:if="${message}">-->
+<!--    <h2 th:text="${message}"></h2>-->
+<!--</div>-->
+<!--<div>-->
+<!--    <form method="POST" enctype="multipart/form-data" action="/Balpum/">-->
+<!--        <table>-->
+<!--            <tr>-->
+<!--                <td>File to upload:</td>-->
+<!--                <td><input type="file" name="file" /></td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--                <td></td>-->
+<!--                <td><input type="submit" value="Upload" /></td>-->
+<!--            </tr>-->
+<!--        </table>-->
+<!--    </form>-->
+<!--</div>-->
+<!--<div>-->
+<!--    <ul>-->
+<!--        <li th:each="file : ${files}">-->
+<!--            <a th:href="${file}" th:text="${file}"></a>-->
+<!--        </li>-->
+<!--    </ul>-->
+<!--</div>-->
+<!--&lt;!&ndash; 파일 상세 정보 조회 &ndash;&gt;-->
+<!--<form id="retrieveForm" method="GET">-->
+<!--    <label for="retrieveFilename">File name to retrieve:</label>-->
+<!--    <input type="text" id="retrieveFilename" name="filename" required>-->
+<!--    <button type="button" onclick="retrieveFileDetails()">Retrieve</button>-->
+<!--</form>-->
 
-<!-- 파일 상세 정보 업데이트 -->
-<form id="updateForm" method="POST">
-    <label for="updateFilename">File name to update:</label>
-    <input type="text" id="updateFilename" name="filename" required>
-    <label for="newOriginalFilename">New Original File name:</label>
-    <input type="text" id="newOriginalFilename" name="newOriginalFilename" required>
-    <button type="button" onclick="updateFileDetails()">Update</button>
-</form>
+<!--&lt;!&ndash; 파일 상세 정보 업데이트 &ndash;&gt;-->
+<!--<form id="updateForm" method="POST">-->
+<!--    <label for="updateFilename">File name to update:</label>-->
+<!--    <input type="text" id="updateFilename" name="filename" required>-->
+<!--    <label for="newOriginalFilename">New Original File name:</label>-->
+<!--    <input type="text" id="newOriginalFilename" name="newOriginalFilename" required>-->
+<!--    <button type="button" onclick="updateFileDetails()">Update</button>-->
+<!--</form>-->
 
-<!-- 파일 삭제 -->
-<form id="deleteForm" method="POST">
-    <label for="deleteFilename">File name to delete:</label>
-    <input type="text" id="deleteFilename" name="filename" required>
-    <button type="button" onclick="deleteFile()">Delete</button>
-</form>
-<script>
-    function retrieveFileDetails() {
-        var filename = document.getElementById('retrieveFilename').value;
-        window.location.href = '/Balpum/fileDetails/' + encodeURIComponent(filename);
-    }
+<!--&lt;!&ndash; 파일 삭제 &ndash;&gt;-->
+<!--<form id="deleteForm" method="POST">-->
+<!--    <label for="deleteFilename">File name to delete:</label>-->
+<!--    <input type="text" id="deleteFilename" name="filename" required>-->
+<!--    <button type="button" onclick="deleteFile()">Delete</button>-->
+<!--</form>-->
+<!--<script>-->
+<!--    function retrieveFileDetails() {-->
+<!--        var filename = document.getElementById('retrieveFilename').value;-->
+<!--        window.location.href = '/Balpum/fileDetails/' + encodeURIComponent(filename);-->
+<!--    }-->
 
-    function updateFileDetails() {
-        var filename = document.getElementById('updateFilename').value;
-        var newOriginalFilename = document.getElementById('newOriginalFilename').value;
-        var formData = new FormData();
-        formData.append('filename', filename);
-        formData.append('newOriginalFilename', newOriginalFilename);
+<!--    function updateFileDetails() {-->
+<!--        var filename = document.getElementById('updateFilename').value;-->
+<!--        var newOriginalFilename = document.getElementById('newOriginalFilename').value;-->
+<!--        var formData = new FormData();-->
+<!--        formData.append('filename', filename);-->
+<!--        formData.append('newOriginalFilename', newOriginalFilename);-->
 
-        fetch('/Balpum/fileDetails/' + encodeURIComponent(filename), {
-            method: 'PUT',
-            body: formData
-        })
-            .then(response => {
-                if (response.ok) {
-                    alert('Updated');
-                } else {
-                    alert('Cannot find the file');
-                }
-            });
-    }
+<!--        fetch('/Balpum/fileDetails/' + encodeURIComponent(filename), {-->
+<!--            method: 'PUT',-->
+<!--            body: formData-->
+<!--        })-->
+<!--            .then(response => {-->
+<!--                if (response.ok) {-->
+<!--                    alert('Updated');-->
+<!--                } else {-->
+<!--                    alert('Cannot find the file');-->
+<!--                }-->
+<!--            });-->
+<!--    }-->
 
-    function deleteFile() {
-        var filename = document.getElementById('deleteFilename').value;
-        fetch('/Balpum/files/' + encodeURIComponent(filename), {
-            method: 'DELETE'
-        })
-            .then(response => {
-                if (response.ok) {
-                    alert('Deleted');
-                } else {
-                    alert('Cannot find the file');
-                }
-            });
-    }
-</script>
-</body>
-</html>
+<!--    function deleteFile() {-->
+<!--        var filename = document.getElementById('deleteFilename').value;-->
+<!--        fetch('/Balpum/files/' + encodeURIComponent(filename), {-->
+<!--            method: 'DELETE'-->
+<!--        })-->
+<!--            .then(response => {-->
+<!--                if (response.ok) {-->
+<!--                    alert('Deleted');-->
+<!--                } else {-->
+<!--                    alert('Cannot find the file');-->
+<!--                }-->
+<!--            });-->
+<!--    }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
