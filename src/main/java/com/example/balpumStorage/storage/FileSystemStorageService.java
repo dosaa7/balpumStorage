@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -52,9 +53,17 @@ public class FileSystemStorageService implements StorageService {
             Path destinationFilePath = loadSafe(refPath);
             Path directory = destinationFilePath.getParent();
             if (directory != null && !Files.exists(directory)) {
+                Path parent = directory.getParent();
+                LinkedList<Path> createdDirectories = new LinkedList<>();
+                while (parent != null && !Files.exists(parent)) {
+                    createdDirectories.addFirst(parent);
+                    parent = parent.getParent();
+                }
                 Files.createDirectories(directory);
-                // 디렉토리 권한 설정: 로컬에서 테스트할 때는 주석처리
                 Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+                for (Path createdDir : createdDirectories) {
+                    Files.setPosixFilePermissions(createdDir, permissions);
+                }
                 Files.setPosixFilePermissions(directory, permissions);
             }
             // 파일 저장 전에 DB에서 동일한 파일이 있는지 확인
