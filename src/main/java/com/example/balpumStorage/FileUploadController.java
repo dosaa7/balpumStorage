@@ -2,6 +2,8 @@ package com.example.balpumStorage;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -69,7 +71,19 @@ public class FileUploadController {
 
         if (fileResource == null) return ResponseEntity.notFound().build();
 
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileResource.getFilepath() + "\"").body(fileResource.getResource());
+        String contentType;
+        try {
+            Path path = Paths.get(fileResource.getFilepath());
+            contentType = Files.probeContentType(path);
+
+            if (contentType == null) {
+                contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE; // 기본값
+            }
+        } catch (Exception e) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE; // 예외 발생 시 기본값
+        }
+
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileResource.getFilepath() + "\"").contentType(MediaType.parseMediaType(contentType)).body(fileResource.getResource());
     }
 
     @PostMapping("/")
