@@ -54,7 +54,7 @@ public class FileUploadController {
 
     @GetMapping("/image-url")
     public ResponseEntity<String> getImageUrl(@RequestBody Map<String, String> requestBody) {
-        String filepath = requestBody.get("filepath");
+        String filepath = requestBody.get("ref");
         String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/files/images/")
                 .path(filepath)
@@ -102,7 +102,7 @@ public class FileUploadController {
 
     @DeleteMapping("/")
     public ResponseEntity<Void> deleteFile(@RequestBody Map<String, String> requestBody) {
-        String filepath = requestBody.get("filepath");
+        String filepath = requestBody.get("ref");
         try {
             storageService.deleteFile(filepath);
             return ResponseEntity.noContent().build();
