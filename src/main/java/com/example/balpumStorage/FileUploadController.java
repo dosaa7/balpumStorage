@@ -2,6 +2,7 @@ package com.example.balpumStorage;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.example.balpumStorage.file.entity.FileEntity;
@@ -50,7 +51,8 @@ public class FileUploadController {
 //    }
 
     @GetMapping("/image-url")
-    public ResponseEntity<String> getImageUrl(@RequestParam String filepath) {
+    public ResponseEntity<String> getImageUrl(@RequestBody Map<String, String> requestBody) {
+        String filepath = requestBody.get("filepath");
         String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/files/images/")
                 .path(filepath)
@@ -84,11 +86,10 @@ public class FileUploadController {
         }
     }
 
-    @DeleteMapping("/**")
-    public ResponseEntity<Void> deleteFile(HttpServletRequest request) {
+    @DeleteMapping("/")
+    public ResponseEntity<Void> deleteFile(@RequestBody Map<String, String> requestBody) {
+        String filepath = requestBody.get("filepath");
         try {
-            String filepath = new UrlPathHelper().getPathWithinApplication(request);
-            filepath = filepath.substring("/api/files/".length());
             storageService.deleteFile(filepath);
             return ResponseEntity.noContent().build();
         } catch (StorageFileNotFoundException e) {
