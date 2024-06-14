@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.example.balpumStorage.file.entity.FileEntity;
 import com.example.balpumStorage.file.resource.FileResource;
@@ -40,18 +42,6 @@ public class FileUploadController {
         this.storageService = storageService;
     }
 
-//    @GetMapping("/")
-//    public String listUploadedFiles(Model model) throws IOException {
-//
-//        model.addAttribute("files", storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList()));
-//        // 파일 절대 경로로 매핑하는 코드
-////        model.addAttribute("files", storageService.loadAll()
-////                .map(Path::toString)
-////                .collect(Collectors.toList()));
-//
-//        return "uploadForm";
-//    }
-
     @GetMapping("/image-url")
     public ResponseEntity<String> getImageUrl(@RequestBody Map<String, String> requestBody) {
         String filepath = requestBody.get("ref");
@@ -84,6 +74,20 @@ public class FileUploadController {
         }
 
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileResource.getFilepath() + "\"").contentType(MediaType.parseMediaType(contentType)).body(fileResource.getResource());
+    }
+
+    @GetMapping("/image-url-list")
+    public ResponseEntity<List<String>> getAllImageUrls(@RequestBody Map<String, String> requestBody) {
+        String directory = requestBody.get("ref");
+        Stream<String> files = storageService.loadAllFilesUnderPath(directory);
+        List<String> fileUrls = files.map(path ->
+                ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/api/files/images/")
+                    .path(path)
+                    .toUriString()
+        ).collect(Collectors.toList());
+
+        return ResponseEntity.ok(fileUrls);
     }
 
     @PostMapping("/")

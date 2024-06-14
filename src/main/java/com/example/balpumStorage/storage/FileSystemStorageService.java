@@ -127,6 +127,18 @@ public class FileSystemStorageService implements StorageService {
         }
     }
 
+    public Stream<String> loadAllFilesUnderPath(String directory) {
+        Path destinationDirectoryPath = loadSafe(directory);
+        Path absoluteRootLocation = rootLocation.toAbsolutePath();
+        try {
+            return Files.walk(destinationDirectoryPath)
+                    .filter(Files::isRegularFile)
+                    .map(path -> absoluteRootLocation.relativize(path).toString().replace("\\", "/"));
+        } catch (IOException e) {
+            throw new StorageException("Failed to read files from directory: " + directory, e);
+        }
+    }
+
     @Transactional
     public void deleteFile(String filepath) {
         Path destinationFilePath = loadSafe(filepath);
@@ -156,10 +168,4 @@ public class FileSystemStorageService implements StorageService {
 
         return destinationFilePath;
     }
-
-//    @Override
-//    public void deleteAll() {
-//        fileRepository.deleteAll();
-//        FileSystemUtils.deleteRecursively(rootLocation.toFile());
-//    }
 }
