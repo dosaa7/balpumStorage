@@ -51,6 +51,7 @@ public class FileSystemStorageService implements StorageService {
             String originalFilename = file.getOriginalFilename();
 
             Path destinationFilePath = loadSafe(refPath);
+            //생성하게 되는 모든 디렉토리에 대하여 권한 부여하기 위한 코드
             Path directory = destinationFilePath.getParent();
             if (directory != null && !Files.exists(directory)) {
                 Path parent = directory.getParent();
@@ -60,7 +61,7 @@ public class FileSystemStorageService implements StorageService {
                     parent = parent.getParent();
                 }
                 Files.createDirectories(directory);
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxr-x---");
                 for (Path createdDir : createdDirectories) {
                     Files.setPosixFilePermissions(createdDir, permissions);
                 }
@@ -69,7 +70,7 @@ public class FileSystemStorageService implements StorageService {
             // 파일 저장 전에 DB에서 동일한 파일이 있는지 확인
             FileEntity existingFile = fileRepository.findByFilepath(destinationFilePath.toString());
             if (existingFile != null) {
-                // 기존 파일이 존재한다면 예외 발생
+                // 기존 파일이 존재하면 업로드 거부
                 throw new StorageException("File with the same name already exists.");
             }
             FileEntity fileEntity = new FileEntity();
