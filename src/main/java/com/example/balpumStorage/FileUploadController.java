@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import com.example.balpumStorage.file.entity.FileEntity;
 import com.example.balpumStorage.file.resource.FileResource;
+import com.example.balpumStorage.storage.StorageException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -99,6 +100,11 @@ public class FileUploadController {
         try {
             storageService.store(file, refPath);
             return ResponseEntity.status(HttpStatus.CREATED).body("You successfully uploaded " + file.getOriginalFilename() + " with reference path " + refPath + "!");
+        } catch (StorageException e) {
+            if (e.getMessage().contains("File with the same name already exists.")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload " + file.getOriginalFilename() + ": " + e.getMessage());
         }

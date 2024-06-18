@@ -69,35 +69,20 @@ public class FileSystemStorageService implements StorageService {
             // 파일 저장 전에 DB에서 동일한 파일이 있는지 확인
             FileEntity existingFile = fileRepository.findByFilepath(destinationFilePath.toString());
             if (existingFile != null) {
-                // 기존 파일이 존재한다면 DB 업데이트
-                existingFile.setOriginalFilename(originalFilename);
-                fileRepository.save(existingFile);
-            } else {
-                FileEntity fileEntity = new FileEntity();
-                fileEntity.setOriginalFilename(originalFilename);
-                fileEntity.setStoredFilename(destinationFilePath.getFileName().toString());
-                fileEntity.setFilepath(destinationFilePath.toString());
-                fileRepository.save(fileEntity);
+                // 기존 파일이 존재한다면 예외 발생
+                throw new StorageException("File with the same name already exists.");
             }
+            FileEntity fileEntity = new FileEntity();
+            fileEntity.setOriginalFilename(originalFilename);
+            fileEntity.setStoredFilename(destinationFilePath.getFileName().toString());
+            fileEntity.setFilepath(destinationFilePath.toString());
+            fileRepository.save(fileEntity);
+
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
             throw new StorageException(e.getMessage());
-        }
-    }
-
-    @Override
-    public Stream<Path> loadAll() {
-        try {
-            return fileRepository.findAll().stream()
-                    .map(fileEntity -> Paths.get(fileEntity.getFilepath()));
-            // rootlocation에 존재하는 파일들을 불러옴
-//            return Files.walk(this.rootLocation, 1)
-//                    .filter(path -> !path.equals(this.rootLocation))
-//                    .map(this.rootLocation::relativize);
-        } catch (Exception e) {
-            throw new StorageException("Failed to read stored files", e);
         }
     }
 
