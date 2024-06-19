@@ -9,25 +9,25 @@
 2. **application 설정**
    application.properties 또는 application.yml 파일에 필요한 설정을 추가합니다.
 ```application.properties
-\# DataSource Configuration
+# DataSource Configuration
 spring.datasource.url=jdbc:mysql://<database_host>:<database_port>/<database_name>
 spring.datasource.username=<database_username>
 spring.datasource.password=<database_password>
 
-\# JPA Configuration
+# JPA Configuration
 spring.jpa.hibernate.ddl-auto=update
 
-\# Application Configuration
+# Application Configuration
 spring.application.name=balpumStorage
 
-\# File Upload Configuration
+# File Upload Configuration
 spring.servlet.multipart.max-file-size=32MB
 spring.servlet.multipart.max-request-size=32MB
 
-\# Storage Configuration
+# Storage Configuration
 storage.location=/path/to/storage
 
-\# Server Configuration
+# Server Configuration
 server.servlet.context-path=/Balpum
 ```
 
