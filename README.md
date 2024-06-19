@@ -106,13 +106,15 @@ server.servlet.context-path=/Balpum
  
  ### **응답**
  
- **200 OK: 파일 URL 리스트 반환메시지:
+ **200 OK: 파일 URL 리스트 반환메시지:**
  
- `json
+ ```
+json
  
  [
    "<BASE_URL>/api/files/images/<FILE_PATH>"
- ]`**
+ ]
+```
  
  ## **5. 파일 삭제 (`DELETE /api/files/`)**
  
