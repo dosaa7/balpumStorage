@@ -7,7 +7,8 @@
 
 1. **프로젝트 소스 클론**
 2. **application 설정**
-   - application.properties 또는 application.yml 파일에 필요한 설정을 추가합니다.
+   application.properties 또는 application.yml 파일에 필요한 설정을 추가합니다.
+```application.properties
 \# DataSource Configuration
 spring.datasource.url=jdbc:mysql://<database_host>:<database_port>/<database_name>
 spring.datasource.username=<database_username>
@@ -28,6 +29,7 @@ storage.location=/path/to/storage
 
 \# Server Configuration
 server.servlet.context-path=/Balpum
+```
 
 
 ## 사용 방법
